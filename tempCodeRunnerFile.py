@@ -1,0 +1,1 @@
+self.canvas.bind('<Motion>', self.on_mouse_move)

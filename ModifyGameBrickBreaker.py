@@ -59,15 +59,18 @@ class Ball(GameObject):
 
 class Paddle(GameObject):
     def __init__(self, canvas, x, y):
-        self.width = 80
-        self.height = 10
         self.ball = None
-        item = canvas.create_rectangle(x - self.width / 2,
-                                       y - self.height / 2,
-                                       x + self.width / 2,
-                                       y + self.height / 2,
-                                       fill='yellow')
+        folder = os.path.dirname(os.path.abspath(__file__))
+        self.image = tk.PhotoImage(file=os.path.join(folder, 'burger.png'))
+        self.width = self.image.width()
+        self.height = self.image.height()
+        item = canvas.create_image(x, y, image=self.image)
         super(Paddle, self).__init__(canvas, item)
+
+    def get_position(self):
+        x, y = self.canvas.coords(self.item)
+        return [x - self.width / 2, y - self.height / 2,
+                x + self.width / 2, y + self.height / 2]
 
     def set_ball(self, ball):
         self.ball = ball
@@ -75,7 +78,8 @@ class Paddle(GameObject):
     def move(self, offset):
         coords = self.get_position()
         width = self.canvas.winfo_width()
-        if coords[0] + offset >= 0 and coords[2] + offset <= width:
+        offset = max(-coords[0], min(offset, width - coords[2]))
+        if offset:
             super(Paddle, self).move(offset, 0)
             if self.ball is not None:
                 self.ball.move(offset, 0)
