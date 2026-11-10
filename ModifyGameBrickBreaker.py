@@ -1,6 +1,7 @@
 import tkinter as tk
 import os
 
+
 class GameObject(object):
     def __init__(self, canvas, item):
         self.canvas = canvas
@@ -23,7 +24,7 @@ class Ball(GameObject):
         self.speed = 10
         item = canvas.create_oval(x-self.radius, y-self.radius,
                                   x+self.radius, y+self.radius,
-                                  fill='white')
+                                  fill='#f1c40f')
         super(Ball, self).__init__(canvas, item)
 
     def update(self):
@@ -60,14 +61,22 @@ class Ball(GameObject):
 class Paddle(GameObject):
     def __init__(self, canvas, x, y):
         self.ball = None
+        # burger.png harus satu folder dengan file .py ini
         folder = os.path.dirname(os.path.abspath(__file__))
-        self.image = tk.PhotoImage(file=os.path.join(folder, 'burger.png'))
+        try:
+            self.image = tk.PhotoImage(file=os.path.join(folder, 'burung.png'))
+        except tk.TclError:
+            # cadangan kalau burger.png tidak ditemukan: balok kuning
+            self.image = tk.PhotoImage(width=90, height=24)
+            self.image.put('#f1c40f', to=(0, 0, 90, 24))
         self.width = self.image.width()
         self.height = self.image.height()
         item = canvas.create_image(x, y, image=self.image)
         super(Paddle, self).__init__(canvas, item)
 
     def get_position(self):
+        # create_image hanya punya titik tengah (x, y),
+        # jadi sisi kiri-atas dan kanan-bawah dihitung manual
         x, y = self.canvas.coords(self.item)
         return [x - self.width / 2, y - self.height / 2,
                 x + self.width / 2, y + self.height / 2]
@@ -78,6 +87,7 @@ class Paddle(GameObject):
     def move(self, offset):
         coords = self.get_position()
         width = self.canvas.winfo_width()
+    
         offset = max(-coords[0], min(offset, width - coords[2]))
         if offset:
             super(Paddle, self).move(offset, 0)
@@ -115,14 +125,17 @@ class Game(tk.Frame):
         self.lives = 3
         self.width = 610
         self.height = 400
-        self.canvas = tk.Canvas(self, bg='#aaaaff',
+        self.canvas = tk.Canvas(self, bg='#1b1b2f',
                                 width=self.width,
-                                height=self.height,)
+                                height=self.height,
+                                highlightthickness=0)
         self.canvas.pack()
         self.pack()
 
         self.items = {}
         self.ball = None
+        # y = 333 supaya sisi atas burger (tinggi 24 px) ada di 321,
+        # tepat di bawah bola
         self.paddle = Paddle(self.canvas, self.width/2, 333)
         self.items[self.paddle.item] = self.paddle
         for x in range(5, self.width - 5, 75):
@@ -165,9 +178,9 @@ class Game(tk.Frame):
         self.items[brick.item] = brick
 
     def draw_text(self, x, y, text, size='40'):
-        font = ('Forte', size)
+        font = ('Arial', size, 'bold')
         return self.canvas.create_text(x, y, text=text,
-                                       font=font)
+                                       font=font, fill='white')
 
     def update_lives_text(self):
         text = 'Lives: %s' % self.lives
@@ -181,3 +194,35 @@ class Game(tk.Frame):
         self.canvas.unbind('<Button-1>')
         self.canvas.delete(self.text)
         self.paddle.ball = None
+        self.game_loop()
+
+    def game_loop(self):
+        self.check_collisions()
+        num_bricks = len(self.canvas.find_withtag('brick'))
+        if num_bricks == 0:
+            self.ball.speed = None
+            self.draw_text(300, 200, 'You win!')
+        elif self.ball.get_position()[3] >= self.height:
+            self.ball.speed = None
+            self.lives -= 1
+            self.update_lives_text()
+            if self.lives <= 0:
+                self.draw_text(300, 200, 'You Lose!!! Game Over!')
+            else:
+                self.after(1000, self.setup_game)
+        else:
+            self.ball.update()
+            self.after(50, self.game_loop)
+
+    def check_collisions(self):
+        ball_coords = self.ball.get_position()
+        items = self.canvas.find_overlapping(*ball_coords)
+        objects = [self.items[x] for x in items if x in self.items]
+        self.ball.collide(objects)
+
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    root.title('Brick Breaker - Burger Edition')
+    game = Game(root)
+    game.mainloop()
