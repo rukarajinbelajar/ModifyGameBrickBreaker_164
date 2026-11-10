@@ -64,7 +64,7 @@ class Paddle(GameObject):
         # burger.png harus satu folder dengan file .py ini
         folder = os.path.dirname(os.path.abspath(__file__))
         try:
-            self.image = tk.PhotoImage(file=os.path.join(folder, 'burung.png'))
+            self.image = tk.PhotoImage(file=os.path.join(folder, 'burger.png'))
         except tk.TclError:
             # cadangan kalau burger.png tidak ditemukan: balok kuning
             self.image = tk.PhotoImage(width=90, height=24)
@@ -96,27 +96,41 @@ class Paddle(GameObject):
 
 
 class Brick(GameObject):
-    COLORS = {1: '#e74c3c', 2: '#3498db', 3: '#222222'}
 
     def __init__(self, canvas, x, y, hits):
-        self.width = 75
+        self.width = 65
         self.height = 20
         self.hits = hits
-        color = Brick.COLORS[hits]
-        item = canvas.create_rectangle(x - self.width / 2,
-                                       y - self.height / 2,
-                                       x + self.width / 2,
-                                       y + self.height / 2,
-                                       fill=color, tags='brick')
+
+        folder = os.path.dirname(os.path.abspath(__file__))
+
+        self.image = tk.PhotoImage(
+            file=os.path.join(folder, 'awan.png')
+        )
+
+        item = canvas.create_image(
+            x, y,
+            image=self.image,
+            tags='brick'
+        )
+
         super(Brick, self).__init__(canvas, item)
+
+    def get_position(self):
+        x, y = self.canvas.coords(self.item)
+
+        return [
+            x - self.width / 2,
+            y - self.height / 2,
+            x + self.width / 2,
+            y + self.height / 2
+        ]
 
     def hit(self):
         self.hits -= 1
+
         if self.hits == 0:
             self.delete()
-        else:
-            self.canvas.itemconfig(self.item,
-                                   fill=Brick.COLORS[self.hits])
 
 
 class Game(tk.Frame):
