@@ -1,7 +1,6 @@
 import tkinter as tk
 import os
 
-
 class GameObject(object):
     def __init__(self, canvas, item):
         self.canvas = canvas
@@ -124,7 +123,7 @@ class Game(tk.Frame):
 
         self.items = {}
         self.ball = None
-        self.paddle = Paddle(self.canvas, self.width/2, 326)
+        self.paddle = Paddle(self.canvas, self.width/2, 333)
         self.items[self.paddle.item] = self.paddle
         for x in range(5, self.width - 5, 75):
             self.add_brick(x + 37.5, 50, 2)
@@ -138,13 +137,20 @@ class Game(tk.Frame):
                          lambda _: self.paddle.move(-10))
         self.canvas.bind('<Right>',
                          lambda _: self.paddle.move(10))
+        self.canvas.bind('<Motion>', self.on_mouse_move)
+
+    def on_mouse_move(self, event):
+        coords = self.paddle.get_position()
+        center = (coords[0] + coords[2]) / 2
+        self.paddle.move(event.x - center)
 
     def setup_game(self):
-           self.add_ball()
-           self.update_lives_text()
-           self.text = self.draw_text(300, 200,
-                                      'Press Space to start')
-           self.canvas.bind('<space>', lambda _: self.start_game())
+        self.add_ball()
+        self.update_lives_text()
+        self.text = self.draw_text(300, 200,
+                                   'Press Space to start')
+        self.canvas.bind('<space>', lambda _: self.start_game())
+        self.canvas.bind('<Button-1>', lambda _: self.start_game())
 
     def add_ball(self):
         if self.ball is not None:
@@ -172,37 +178,6 @@ class Game(tk.Frame):
 
     def start_game(self):
         self.canvas.unbind('<space>')
+        self.canvas.unbind('<Button-1>')
         self.canvas.delete(self.text)
         self.paddle.ball = None
-        self.game_loop()
-
-    def game_loop(self):
-        self.check_collisions()
-        num_bricks = len(self.canvas.find_withtag('brick'))
-        if num_bricks == 0: 
-            self.ball.speed = None
-            self.draw_text(300, 200, 'You win!')
-        elif self.ball.get_position()[3] >= self.height: 
-            self.ball.speed = None
-            self.lives -= 1
-            if self.lives < 0:
-                self.draw_text(300, 200, 'You Lose!!! Game Over!')
-            else:
-                self.after(1000, self.setup_game)
-        else:
-            self.ball.update()
-            self.after(50, self.game_loop)
-
-    def check_collisions(self):
-        ball_coords = self.ball.get_position()
-        items = self.canvas.find_overlapping(*ball_coords)
-        objects = [self.items[x] for x in items if x in self.items]
-        self.ball.collide(objects)
-
-
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    root.title('Hello, Jarvis!')
-    game = Game(root)
-    game.mainloop()
